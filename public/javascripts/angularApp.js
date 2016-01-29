@@ -19,7 +19,12 @@ app.config([
 		.state('posts', {
 			url: '/posts/{id}',
 			templateUrl: '/posts.html',
-			controller: 'PostsCtrl'
+			controller: 'PostsCtrl',
+			resolve: {
+				postPromise: ['posts', '$stateParams' function(posts, $stateParams) {
+					posts.getPost($stateParams.id)
+				}]
+			}
 		});
 
 		$urlRouterProvider.otherwise('home');
@@ -29,6 +34,12 @@ app.config([
 		var o = {
 			posts: []
 		};
+
+		o.getPost = function(id) {
+			return $http.get('/posts' + id).then(function(res) {
+				res.data;
+			})
+		}
 
 		o.getAll = function() {
 			return $http.get('/posts').success(function(data) {
@@ -42,6 +53,12 @@ app.config([
 			});
 		};
 
+		o.upvote = function(post) {
+			return $http.put('/posts/' + post._id + '/upvote').success(function(data) {
+				post.upvotes += 1;
+			});
+		};
+
 		return o;
 	}]);
 
@@ -50,17 +67,17 @@ app.config([
 		'posts',
 		function($scope, posts) {
 			$scope.posts = posts.posts;
-			$scope.addPost = function() {
-				if (!$scope.title || $scope.title == '') { return; }
+			$scope.addPost = function(){
+				if(!$scope.title || $scope.title === '') { return; }
 				posts.create({
-					tilte: $scope.title,
-					link: $scope.link
+					title: $scope.title,
+					link: $scope.link,
 				});
 				$scope.title = '';
 				$scope.link = '';
 			};
 			$scope.incrementUpvotes = function(post) {
-				post.upvotes += 1;
+				posts.upvote(post);
 			};
 			$scope.decrementUpvotes = function(post) {
 				if (post.upvotes > 0) {post.upvotes -= 1;}
